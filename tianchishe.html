@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html ng-app="myApp">
+<head>
+	<title></title>
+	<meta charset="utf-8">
+	<style>
+		*{
+			margin: 0;
+			padding: 0;
+		}
+		body{
+			background: #464646;
+		}
+		svg{
+			background: #ececec;
+			margin: 0 auto;
+			display: block;
+		}
+	</style>
+	<script src="js/angular.min.js"></script>
+</head>
+<body>
+	<svg id="myBox" width="80%" ng-controller="gridCtrl">
+		<g stroke="#949494" stroke-width="1">
+			<line x1="0" ng-attr-y1="{{v}}" x2="100%" ng-attr-y2="{{v}}" ng-repeat="v in gridXArr"></line>
+			<line ng-attr-x1="{{v}}" y1="0" ng-attr-x2="{{v}}" y2="100%" ng-repeat="v in gridYArr"></line>
+		</g>
+		<g>
+			<!--<circle ng-attr-r="{{v.r}}" ng-attr-cx="{{v.cx}}" ng-attr-cy="{{v.cy}}" ng-attr-fill="{{v.fill}}" ng-repeat="v in littleList"></circle>-->
+			<circle ng-attr-r="{{little.r}}" ng-attr-cx="{{little.cx}}" ng-attr-cy="{{little.cy}}" ng-attr-fill="{{little.fill}}"></circle>
+		</g>
+		<g>
+			<circle ng-attr-r="{{v.r}}" ng-attr-cx="{{v.x}}" ng-attr-cy="{{v.y}}" fill="{{v.bgColor}}" ng-repeat="v in mainList track by $index"></circle>
+
+			<g id="eyes">
+				<!--第一只眼睛-->
+				<circle ng-attr-r="{{mainList[0].firstEye.r}}" ng-attr-cx="{{mainList[0].firstEye.cx}}" ng-attr-cy="{{mainList[0].firstEye.cy}}" fill="{{mainList[0].firstEye.bgColor}}"></circle>
+				<circle ng-attr-r="{{mainList[0].firstEye.insetBlack.r}}" ng-attr-cx="{{mainList[0].firstEye.insetBlack.cx}}" ng-attr-cy="{{mainList[0].firstEye.insetBlack.cy}}" fill="{{mainList[0].firstEye.insetBlack.bgColor}}"></circle>
+				<!--第二只眼睛-->
+				<circle ng-attr-r="{{mainList[0].secondEye.r}}" ng-attr-cx="{{mainList[0].secondEye.cx}}" ng-attr-cy="{{mainList[0].secondEye.cy}}" fill="{{mainList[0].firstEye.bgColor}}"></circle>
+				<circle ng-attr-r="{{mainList[0].secondEye.insetBlack.r}}" ng-attr-cx="{{mainList[0].secondEye.insetBlack.cx}}" ng-attr-cy="{{mainList[0].secondEye.insetBlack.cy}}" fill="{{mainList[0].secondEye.insetBlack.bgColor}}"></circle>
+			</g>
+
+		</g>
+
+
+	</svg>
+	<script>
+		/*定义svg的高度为屏幕的高度*/
+		var width =  window.innerWidth;
+		var height =  window.innerHeight;
+		myBox.style.height=height+'px';
+		var svgWidth = Number(myBox.getAttribute('width').replace(/%/, ""))/100*width;
+		var svgHeight = height;
+		/*定义网格间距*/
+		var offset = 20;
+
+		var app = angular.module('myApp',['ng']);
+		app.controller('gridCtrl',['$scope','$interval',function($scope,$interval){
+
+			/*定义横向网格数组*/
+			$scope.gridXArr = [];
+			for(var i=0;i<parseInt(svgHeight/offset);i++){
+				$scope.gridXArr.push((i+1)*offset);
+			}
+			/*定义纵向网格数组*/
+			$scope.gridYArr = [];
+			for(var j=0;j<parseInt(svgWidth/offset);j++){
+				$scope.gridYArr.push((j+1)*offset);
+			}
+
+			/*定义随机X坐标函数randomX()*/
+			function randomNum(m,n) {
+				return parseInt(Math.random()*(n-m+1)+m);
+            }
+			/*定义随机颜色函数*/
+			function rc(){
+				var r = randomNum(0,256);
+				var g = randomNum(0,256);
+				var b = randomNum(0,256);
+				return `rgb(${r},${g},${b})`;
+			}
+			/*设置画布上随机出现的小圆点*/
+			function little() {
+                $scope.little = {'r':10,'cx':randomNum(0,svgWidth),'cy':randomNum(0,svgHeight),'fill':rc()};
+            }
+            little();
+			/*设置蛇头及蛇身的相关数组对象*/
+			var x = randomNum((svgWidth-svgWidth*0.5)/2,3*svgWidth/4);
+			var y = randomNum((svgHeight-svgHeight*0.5)/2,3*svgHeight/4);
+			var r = 10;
+			var bgColor = rc();
+
+			$scope.mainList = [
+				{'r':r,'x':x,'y':y,'bgColor':bgColor,'firstEye':{'r':r*0.45,'cx':x,'cy':y-r*0.65,'bgColor':'#fff','insetBlack':{'r':r*0.2,'cx':x,'cy':y-r*0.65,'bgColor':'#000'}},'secondEye':{'r':r*0.45,'cx':x,'cy':y+r*0.65,'bgColor':'#fff','insetBlack':{'r':r*0.2,'cx':x,'cy':y+r*0.65,'bgColor':'#000'}}},
+				{'r':r,'x':x-r*2,'y':y,'bgColor':bgColor},
+                {'r':r,'x':x-r*4,'y':y,'bgColor':bgColor},
+                {'r':r,'x':x-r*6,'y':y,'bgColor':bgColor},
+                {'r':r,'x':x-r*8,'y':y,'bgColor':bgColor},
+                {'r':r,'x':x-r*10,'y':y,'bgColor':bgColor},
+                {'r':r,'x':x-r*12,'y':y,'bgColor':bgColor}
+            ];
+			function grow() {
+			    var last = Object.assign({}, $scope.mainList[$scope.mainList.length - 1])
+				if ($scope.direction == 0) {//right
+                    last.x += 20
+				}
+                if ($scope.direction == 1) {//left
+                    last.x -= 20
+                }
+                if ($scope.direction == 2) {//down
+                    last.y -=20
+                }
+                if ($scope.direction == 3) {//up
+                    last.y +=20
+                }
+                $scope.mainList.push(last)
+				little()
+			}
+
+            function move() {
+                var head = Object.assign({},$scope.mainList[0]);
+                if ($scope.direction == 0) { //right
+                    head.x+=20;
+                    head.firstEye.cx+=20;
+                    head.firstEye.insetBlack.cx+=20;
+                    head.secondEye.cx+=20;
+                    head.secondEye.insetBlack.cx+=20;
+                    for(var i = $scope.mainList.length - 1; i > 0; i--) {
+                        $scope.mainList[i] = $scope.mainList[i-1];
+                    }
+                    $scope.mainList.shift();
+                    $scope.mainList.unshift(head);
+				} else  if ($scope.direction == 1) { // left
+                    head.x-=20;
+                    head.firstEye.cx-=20;
+                    head.firstEye.insetBlack.cx-=20;
+                    head.secondEye.cx-=20;
+                    head.secondEye.insetBlack.cx-=20;
+                    for(var i = $scope.mainList.length - 1; i > 0; i--) {
+                        $scope.mainList[i] = $scope.mainList[i-1]
+                    }
+                    $scope.mainList.shift();
+                    $scope.mainList.unshift(head)
+
+				} else  if ($scope.direction == 2) { // down
+					head.y+=20;
+                    head.firstEye.cy+=20;
+                    head.firstEye.insetBlack.cy+=20;
+                    head.secondEye.cy+=20;
+                    head.secondEye.insetBlack.cy+=20;
+                    for(var i = $scope.mainList.length - 1; i > 0; i--) {
+                        $scope.mainList[i] = $scope.mainList[i-1]
+					}
+                    $scope.mainList.shift();
+					$scope.mainList.unshift(head);
+
+                } else  if ($scope.direction == 3) { // up
+                    head.y-=20;
+                    head.firstEye.cy-=20;
+                    head.firstEye.insetBlack.cy-=20;
+                    head.secondEye.cy-=20;
+                    head.secondEye.insetBlack.cy-=20;
+                    for(var i = $scope.mainList.length - 1; i > 0; i--) {
+                        $scope.mainList[i] = $scope.mainList[i-1]
+                    }
+                    $scope.mainList.shift();
+                    $scope.mainList.unshift(head);
+                }
+
+                eyes.setAttribute('transform','rotate('+$scope.rotate+','+$scope.mainList[0].x+' '+$scope.mainList[0].y+')');
+
+                if(head.x>=svgWidth || head.x<=0 || head.y<=0 || head.y>=svgHeight) {
+                    stopGame();
+					return
+                }
+                if (checkSelf()) {
+                    stopGame();
+					return
+				}
+                if((head.x>$scope.little.cx-20) && (head.x<$scope.little.cx+20) && (head.y>$scope.little.cy-20) && (head.y<$scope.little.cy+20)){
+                    grow();
+				}
+
+			}
+			function checkSelf() {
+                var head = $scope.mainList[0];
+                var cracked = false;
+                $scope.mainList.forEach(function (item, index) {
+                    if (index == 0) {
+                        return true
+                    }
+                    if (head.x == item.x && head.y == item.y) {
+                        cracked = true
+                        return false
+                    }
+                })
+				return cracked
+            }
+            $scope.direction = 0;// 蛇的头部朝向
+            $scope.rotate = 0;//眼睛当前旋转的度数
+            $scope.timer = null;
+			/*游戏开始startGame()*/
+            function startGame() {
+                $scope.timer = $interval(function () {
+                    move();
+                },300);
+            }
+            function stopGame() {
+                $interval.cancel($scope.timer);
+                alert('Game over');
+			}
+            startGame();
+			window.onkeyup = function (e) {
+				switch (e.keyCode){
+                    case 37:
+                        $scope.direction = 1;//left
+						$scope.rotate = 0;
+                        break;
+					case 38:
+					    $scope.direction = 3;//up
+                        $scope.rotate = -90;
+						break;
+                    case 39:
+                        $scope.direction = 0;//right
+                        $scope.rotate = 0;
+                        break;
+					case 40:
+                        $scope.direction = 2;//down
+                        $scope.rotate = 90;
+                        break;
+				}
+            }
+
+		}]);
+
+
+	</script>
+</body>
+</html>
